@@ -3,3 +3,7 @@
 /dist/
 /ledlink
 /ledlink.exe
+
+# Desktop app
+/desktop/node_modules/
+/desktop/release/

@@ -20,6 +20,7 @@ adplot platform ──REST/WebSocket──▶ LED Link ──▶ Huidu │ Onbon
 | Core model, driver registry, device manager | ✅ working |
 | REST API + CLI (`serve`, `scan`, `identify`, `drivers`, `ui`) | ✅ working |
 | Browser control interface (embedded in the binary, no install) | ✅ working |
+| Desktop app (.deb / AppImage / Windows zip, native window) | ✅ working |
 | Generic auto-identification (probe all adapters, connect without knowing the vendor) | ✅ working |
 | `mock` driver (simulated screens, for development) | ✅ working |
 | `huidu` driver (Huidu SDK 2.0 TCP, wraps [huidu-led](https://github.com/alparslanahmed/huidu-led), MIT) | ⚠️ implemented, **not yet validated on physical hardware** |
@@ -56,6 +57,40 @@ extra to install and it works offline:
 - **Display** — brightness slider and screen on/off.
 
 Everything the UI does is also available through the REST API below.
+
+### Desktop app
+
+For day-to-day use there is a packaged desktop application: the same interface
+in a native window, with the LED Link service started and stopped automatically
+so nobody has to touch a terminal.
+
+| Platform | Package |
+|---|---|
+| Ubuntu / Debian | `adplot-ledlink-0.3.0-linux-amd64.deb` |
+| Any Linux (portable) | `adplot-ledlink-0.3.0-linux-x86_64.AppImage` |
+| Any Linux (archive) | `adplot-ledlink-0.3.0-linux-x64.tar.gz` |
+| Windows 10/11 | `adplot-ledlink-0.3.0-win-x64.zip` |
+
+```bash
+# Ubuntu / Debian — adds an "adplot LED Link" entry to the application menu
+sudo apt install ./adplot-ledlink-0.3.0-linux-amd64.deb
+
+# AppImage
+chmod +x adplot-ledlink-0.3.0-linux-x86_64.AppImage
+./adplot-ledlink-0.3.0-linux-x86_64.AppImage
+
+# Windows: unzip and run "adplot LED Link.exe"
+```
+
+The app picks a free loopback port, starts the bundled gateway, and shuts it
+down again when the window closes. Service logs go to
+`~/.config/adplot LED Link/ledlink.log`.
+
+Rebuild the packages with:
+
+```bash
+./scripts/build-desktop.sh
+```
 
 ### Try it (no hardware needed)
 
@@ -209,6 +244,8 @@ cmd/ledlink-refd/           reference firmware daemon (Pi/Linux panels)
 internal/core/              vendor-neutral model, driver interface, registry, manager
 internal/api/               REST API server
 internal/webui/             embedded browser control interface (HTML/CSS/JS)
+desktop/                    Electron desktop shell + packaging config
+scripts/                    icon generation and desktop build script
 internal/discovery/         scan target expansion (local subnet, host lists, CIDR)
 internal/ddpwire/           shared DDP packet encoder
 internal/render/            rasterizes text/images to RGB frames for streaming drivers

@@ -1,0 +1,92 @@
+{
+  "name": "adplot-ledlink",
+  "productName": "adplot LED Link",
+  "version": "0.3.0",
+  "description": "Vendor-neutral LED screen controller gateway for adplot",
+  "main": "main.js",
+  "license": "MIT",
+  "homepage": "https://github.com/AntonisKontogiannis/adplot-ledlink",
+  "desktopName": "adplot-ledlink.desktop",
+  "author": {
+    "name": "Antonis Kontogiannis",
+    "email": "AntonisKontogiannis@users.noreply.github.com"
+  },
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "build:server": "cd .. && CGO_ENABLED=0 go build -trimpath -ldflags '-s -w' -o dist/ledlink-linux-amd64 ./cmd/ledlink",
+    "dist:linux": "electron-builder --linux deb AppImage tar.gz",
+    "dist:win": "electron-builder --win zip"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "com.adplot.ledlink",
+    "productName": "adplot LED Link",
+    "artifactName": "adplot-ledlink-${version}-${os}-${arch}.${ext}",
+    "copyright": "Copyright \u00a9 2026 adplot LED Link contributors",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0t64 | libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0t64 | libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0"
+      ]
+    },
+    "files": [
+      "main.js",
+      "assets/**",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "deb",
+        "AppImage",
+        "tar.gz"
+      ],
+      "category": "Utility",
+      "icon": "build/icon.png",
+      "syncDesktopName": true,
+      "synopsis": "LED screen controller gateway",
+      "description": "Discover, connect and control LED screen controllers (Huidu, Colorlight, DDP, reference firmware) from one window.",
+      "desktop": {
+        "entry": {
+          "Name": "adplot LED Link",
+          "Comment": "Control LED screens",
+          "Categories": "Utility;Network;",
+          "Keywords": "led;signage;adplot;display;screen;"
+        }
+      },
+      "extraResources": [
+        {
+          "from": "../dist/ledlink-linux-amd64",
+          "to": "ledlink"
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        "zip"
+      ],
+      "icon": "build/icon.ico",
+      "signExecutable": false,
+      "extraResources": [
+        {
+          "from": "../dist/ledlink-windows-amd64.exe",
+          "to": "ledlink.exe"
+        }
+      ]
+    }
+  }
+}
