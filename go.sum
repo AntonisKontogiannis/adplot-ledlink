@@ -1,0 +1,6 @@
+github.com/alparslanahmed/huidu-led v0.1.7 h1:5xN0LgGDU+iCgpies8ZiLCwk0arbRQvxajzeSb++AIw=
+github.com/alparslanahmed/huidu-led v0.1.7/go.mod h1:MU+0j976uhjBpstplPYTDq6XwRRSyPvsa+0rE5u8XHM=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+golang.org/x/image v0.43.0 h1:FLxcP4ec2350nTfOC8ysKtqYSIFbk/QGjw1ZHNP4tsY=
+golang.org/x/image v0.43.0/go.mod h1:rrpelvGFt+kLPAjPM4HeWPgrl0FtafueU//e5N0qk/Q=
