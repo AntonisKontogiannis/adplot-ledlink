@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -212,6 +213,40 @@ func TestScanDefaultsToAllDrivers(t *testing.T) {
 	for _, d := range out.Devices {
 		if d.Driver != "mock" {
 			t.Fatalf("unexpected driver %q", d.Driver)
+		}
+	}
+}
+
+func TestEmbeddedUI(t *testing.T) {
+	ts := newTestServer(t)
+
+	resp, err := http.Get(ts.URL + "/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("GET / = %d", resp.StatusCode)
+	}
+	if ct := resp.Header.Get("Content-Type"); ct != "text/html; charset=utf-8" {
+		t.Fatalf("GET / content-type = %q", ct)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(body, []byte("adplot LED Link")) {
+		t.Fatal("index page does not look like the LED Link UI")
+	}
+
+	for _, asset := range []string{"/style.css", "/app.js"} {
+		resp, err := http.Get(ts.URL + asset)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("GET %s = %d", asset, resp.StatusCode)
 		}
 	}
 }

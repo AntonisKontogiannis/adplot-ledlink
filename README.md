@@ -18,7 +18,8 @@ adplot platform ──REST/WebSocket──▶ LED Link ──▶ Huidu │ Onbon
 | Component | State |
 |---|---|
 | Core model, driver registry, device manager | ✅ working |
-| REST API + CLI (`serve`, `scan`, `identify`, `drivers`) | ✅ working |
+| REST API + CLI (`serve`, `scan`, `identify`, `drivers`, `ui`) | ✅ working |
+| Browser control interface (embedded in the binary, no install) | ✅ working |
 | Generic auto-identification (probe all adapters, connect without knowing the vendor) | ✅ working |
 | `mock` driver (simulated screens, for development) | ✅ working |
 | `huidu` driver (Huidu SDK 2.0 TCP, wraps [huidu-led](https://github.com/alparslanahmed/huidu-led), MIT) | ⚠️ implemented, **not yet validated on physical hardware** |
@@ -34,9 +35,27 @@ Requires Go 1.27+.
 
 ```bash
 go build -o bin/ledlink ./cmd/ledlink
+./bin/ledlink                            # start + open the browser interface
+./bin/ledlink serve --mock-devices 2     # start with 2 simulated screens
 ./bin/ledlink drivers                    # list adapters: huidu, mock
-./bin/ledlink serve --mock-devices 2     # start API with 2 simulated screens
 ```
+
+### Browser interface
+
+Running `ledlink` with no arguments (or `ledlink ui`) starts the service and
+opens `http://127.0.0.1:8787/` in your browser — the intended entry point for
+day-to-day use. Double-clicking the executable does the same.
+
+The interface is a single page compiled into the binary, so there is nothing
+extra to install and it works offline:
+
+- **Screens** — every connected controller with its vendor, address and size.
+- **Add screen** — scan the network, or type an IP and let auto-detection work
+  out the vendor.
+- **Message** — text, colour, effect and speed, sent with one click.
+- **Display** — brightness slider and screen on/off.
+
+Everything the UI does is also available through the REST API below.
 
 ### Try it (no hardware needed)
 
@@ -165,11 +184,11 @@ generic at three levels:
 
 ## Roadmap
 
-1. **Phase 1 (this scaffold)** — core, REST API, CLI, Huidu adapter, mock
-   driver, discovery, tests.
+1. **Phase 1 (this scaffold)** — core, REST API, CLI, embedded browser UI,
+   Huidu adapter, mock driver, discovery, tests.
 2. **Phase 2** — `onbon` adapter (official BX-Y SDK protocol), validated
    against a BX-Y1A.
-3. **Phase 3** — desktop UI (tray app / small window); richer streaming
+3. **Phase 3** — packaging (desktop launchers / tray icon); richer streaming
    (images, animation); real-hardware validation for colorlight/DDP/reffw.
 4. **Phase 4** — scheduled playlists, more vendors, cloud fallback
    (XiaoHui / Onbon cloud) for devices that can't be reached directly.
@@ -189,6 +208,7 @@ cmd/ledlink/                CLI entry point (serve, scan, identify, drivers)
 cmd/ledlink-refd/           reference firmware daemon (Pi/Linux panels)
 internal/core/              vendor-neutral model, driver interface, registry, manager
 internal/api/               REST API server
+internal/webui/             embedded browser control interface (HTML/CSS/JS)
 internal/discovery/         scan target expansion (local subnet, host lists, CIDR)
 internal/ddpwire/           shared DDP packet encoder
 internal/render/            rasterizes text/images to RGB frames for streaming drivers

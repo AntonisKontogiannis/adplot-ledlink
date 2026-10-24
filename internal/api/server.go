@@ -11,6 +11,7 @@ import (
 
 	"adplot/ledlink/internal/core"
 	"adplot/ledlink/internal/discovery"
+	"adplot/ledlink/internal/webui"
 )
 
 // Server serves the LED Link REST API on top of a core.Manager.
@@ -42,6 +43,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/v1/devices/{id}/brightness", s.handleBrightness)
 	mux.HandleFunc("POST /api/v1/devices/{id}/power", s.handlePower)
 	mux.HandleFunc("POST /api/v1/devices/{id}/media", s.handleUploadMedia)
+
+	// The browser control interface is embedded in the binary and served at /.
+	mux.Handle("GET /", webui.Handler())
 
 	return withCORS(withLogging(s.Log, mux))
 }

@@ -9,8 +9,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
 	"time"
 
 	"adplot/ledlink/internal/api"
@@ -27,29 +30,34 @@ import (
 const version = "0.3.0"
 
 func main() {
-	if len(os.Args) < 2 {
-		usage()
-		os.Exit(2)
-	}
+	args := os.Args[1:]
 
 	var err error
-	switch os.Args[1] {
-	case "serve":
-		err = runServe(os.Args[2:])
-	case "scan":
-		err = runScan(os.Args[2:])
-	case "identify":
-		err = runIdentify(os.Args[2:])
-	case "drivers":
-		runDrivers()
-	case "version", "--version", "-v":
-		fmt.Println("ledlink", version)
-	case "help", "--help", "-h":
-		usage()
-	default:
-		fmt.Fprintf(os.Stderr, "unknown command %q\n\n", os.Args[1])
-		usage()
-		os.Exit(2)
+	if len(args) == 0 {
+		// No arguments is the everyday-user path: start the gateway and open
+		// the browser interface, so double-clicking the binary just works.
+		err = runServe([]string{"-open"})
+	} else {
+		switch args[0] {
+		case "serve":
+			err = runServe(args[1:])
+		case "ui":
+			err = runServe(append([]string{"-open"}, args[1:]...))
+		case "scan":
+			err = runScan(args[1:])
+		case "identify":
+			err = runIdentify(args[1:])
+		case "drivers":
+			runDrivers()
+		case "version", "--version", "-v":
+			fmt.Println("ledlink", version)
+		case "help", "--help", "-h":
+			usage()
+		default:
+			fmt.Fprintf(os.Stderr, "unknown command %q\n\n", args[0])
+			usage()
+			os.Exit(2)
+		}
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "error:", err)
@@ -61,7 +69,9 @@ func usage() {
 	fmt.Fprintf(os.Stderr, `ledlink %s - vendor-neutral LED screen controller gateway for adplot
 
 Usage:
-  ledlink serve [flags]      run the REST API server
+  ledlink                    start the service and open the browser interface
+  ledlink ui [flags]         same as above (explicit form)
+  ledlink serve [flags]      run the REST API + web interface
   ledlink scan [flags]       probe the network for controllers
   ledlink identify [flags]   ask every adapter what is at this address
   ledlink drivers            list registered driver adapters
@@ -70,6 +80,7 @@ Usage:
 Serve flags:
   -listen string        API listen address (default "127.0.0.1:8787")
   -mock-devices int     pre-connect N simulated devices (for development)
+  -open                 open the browser interface after starting
 
 Scan flags:
   -driver string        adapter to probe with: auto|huidu|mock (default "auto")
@@ -86,6 +97,7 @@ func runServe(args []string) error {
 	fs := flag.NewFlagSet("serve", flag.ExitOnError)
 	listen := fs.String("listen", "127.0.0.1:8787", "API listen address")
 	mockDevices := fs.Int("mock-devices", 0, "pre-connect N simulated mock devices")
+	openUI := fs.Bool("open", false, "open the browser interface after starting")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -103,14 +115,55 @@ func runServe(args []string) error {
 		logger.Printf("mock device %s connected", addr)
 	}
 
-	srv := api.New(mgr, version, logger)
+	// Bind before announcing so the printed URL is already accepting traffic.
+	ln, err := net.Listen("tcp", *listen)
+	if err != nil {
+		return err
+	}
+
+	uiURL := browserURL(*listen)
 	httpServer := &http.Server{
-		Addr:              *listen,
-		Handler:           srv.Handler(),
+		Handler:           api.New(mgr, version, logger).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
-	logger.Printf("ledlink %s listening on http://%s (drivers: %v)", version, *listen, reg.Names())
-	return httpServer.ListenAndServe()
+	logger.Printf("ledlink %s listening on %s (drivers: %v)", version, uiURL, reg.Names())
+
+	if *openUI {
+		logger.Printf("opening the control interface in your browser")
+		go func() {
+			if err := openBrowser(uiURL); err != nil {
+				logger.Printf("could not open a browser automatically: %v (open %s manually)", err, uiURL)
+			}
+		}()
+	}
+	return httpServer.Serve(ln)
+}
+
+// browserURL turns a listen address into a URL a local browser can reach.
+func browserURL(listen string) string {
+	host, port, err := net.SplitHostPort(listen)
+	if err != nil {
+		return "http://" + listen + "/"
+	}
+	switch host {
+	case "", "0.0.0.0", "::":
+		host = "127.0.0.1"
+	}
+	return "http://" + net.JoinHostPort(host, port) + "/"
+}
+
+// openBrowser launches the platform's default browser at url.
+func openBrowser(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	default:
+		cmd = exec.Command("xdg-open", url)
+	}
+	return cmd.Start()
 }
 
 func runScan(args []string) error {
